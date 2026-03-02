@@ -4,36 +4,49 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Home from "./pages/Home";
-
+import Setup from "./pages/Setup";
+import Login from "./pages/Login";
+import CategoryView from "./pages/CategoryView";
+import AddEditEntry from "./pages/AddEditEntry";
+import Settings from "./pages/Settings";
 
 function Router() {
+  const { isInitialized, isAuthenticated } = useAuth();
+
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
+      {/* Authentication Routes */}
+      {!isInitialized ? (
+        <Route path="*" component={Setup} />
+      ) : !isAuthenticated ? (
+        <Route path="*" component={Login} />
+      ) : (
+        <>
+          <Route path="/" component={Home} />
+          <Route path="/category/:id" component={CategoryView} />
+          <Route path="/add-entry" component={AddEditEntry} />
+          <Route path="/edit-entry/:id" component={AddEditEntry} />
+          <Route path="/settings" component={Settings} />
+          <Route path="/404" component={NotFound} />
+          <Route component={NotFound} />
+        </>
+      )}
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+      <ThemeProvider defaultTheme="dark">
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
