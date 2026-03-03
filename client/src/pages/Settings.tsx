@@ -4,26 +4,15 @@
  */
 
 import React, { useState } from "react";
-import { ArrowLeft, AlertCircle, Fingerprint, LogOut } from "lucide-react";
+import { ArrowLeft, AlertCircle, Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 
 export default function Settings() {
-  const {
-    logout,
-    useBiometric,
-    enableBiometric,
-    disableBiometric,
-    fingerprintSupported,
-    fingerprintRegistered,
-    registerBiometric,
-    wipeData,
-  } = useAuth();
+  const { logout, wipeData, autoLockTimeout, setAutoLockTimeout } = useAuth();
   const [, navigate] = useLocation();
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
-  const [isRegisteringBiometric, setIsRegisteringBiometric] = useState(false);
-  const [biometricError, setBiometricError] = useState("");
 
   const handleWipeData = () => {
     if (
@@ -38,30 +27,22 @@ export default function Settings() {
     navigate("/");
   };
 
-  const handleBiometricToggle = () => {
-    if (useBiometric) {
-      disableBiometric();
-    } else if (fingerprintRegistered) {
-      enableBiometric();
-    }
-  };
-
-  const handleRegisterBiometric = async () => {
-    setIsRegisteringBiometric(true);
-    setBiometricError("");
-    const success = await registerBiometric();
-    if (!success) {
-      setBiometricError(
-        "Failed to register fingerprint. Please try again."
-      );
-    }
-    setIsRegisteringBiometric(false);
-  };
-
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  const handleAutoLockChange = (minutes: number) => {
+    setAutoLockTimeout(minutes);
+  };
+
+  const autoLockOptions = [
+    { label: "5 minutes", value: 5 },
+    { label: "15 minutes", value: 15 },
+    { label: "30 minutes", value: 30 },
+    { label: "1 hour", value: 60 },
+    { label: "Never", value: 0 },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,70 +68,39 @@ export default function Settings() {
           <h2 className="text-lg font-bold text-foreground mb-4">Security</h2>
 
           <div className="space-y-3">
-            {/* Biometric Setting */}
-            {fingerprintSupported && (
-              <>
-                {!fingerprintRegistered ? (
-                  <div className="vault-card">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Fingerprint className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">
-                          Fingerprint Unlock
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Register your fingerprint for faster access
-                        </p>
-                      </div>
+            {/* Auto-Lock Timer */}
+            <div className="vault-card">
+              <div className="flex items-center gap-3 mb-4">
+                <Clock className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">Auto-Lock Timer</p>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically logout after inactivity
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {autoLockOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleAutoLockChange(option.value)}
+                    className={`w-full text-left px-4 py-3 rounded-md border transition-colors ${
+                      autoLockTimeout === option.value
+                        ? "bg-primary/10 border-primary text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{option.label}</span>
+                      {autoLockTimeout === option.value && (
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                      )}
                     </div>
-                    {biometricError && (
-                      <div className="flex gap-2 items-start p-3 bg-destructive/10 rounded-md mb-4">
-                        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-destructive">
-                          {biometricError}
-                        </p>
-                      </div>
-                    )}
-                    <Button
-                      onClick={handleRegisterBiometric}
-                      disabled={isRegisteringBiometric}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                      size="sm"
-                    >
-                      {isRegisteringBiometric
-                        ? "Registering..."
-                        : "Register Fingerprint"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="vault-card flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Fingerprint className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">
-                          Fingerprint Unlock
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {useBiometric ? "Enabled" : "Disabled"}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleBiometricToggle}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        useBiometric ? "bg-primary" : "bg-muted"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          useBiometric ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Info Box */}
             <div className="vault-card bg-primary/5 border-primary/20">

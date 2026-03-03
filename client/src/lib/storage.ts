@@ -250,3 +250,18 @@ export async function getEntriesByCategory(
   const vaultData = await loadVaultData(pin);
   return vaultData.entries.filter((e) => e.category === category);
 }
+
+/**
+ * Get auto-lock timeout setting (in minutes)
+ */
+export function getAutoLockTimeout(): number {
+  const stored = localStorage.getItem("vault_auto_lock_timeout");
+  return stored ? parseInt(stored, 10) : 15; // Default 15 minutes
+}
+
+/**
+ * Set auto-lock timeout (in minutes)
+ */
+export function setAutoLockTimeoutStorage(minutes: number): void {
+  localStorage.setItem("vault_auto_lock_timeout", minutes.toString());
+}

@@ -1,10 +1,10 @@
 /**
  * Login Page - Authentication
- * Minimalist Security Design: Focused authentication interface with optional fingerprint
+ * Minimalist Security Design: Focused authentication interface
  */
 
 import React, { useState } from "react";
-import { Lock, AlertCircle, Fingerprint } from "lucide-react";
+import { Lock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,12 +16,9 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const {
     authenticateWithPin,
-    authenticateWithBiometric,
     failedAttempts,
     maxAttempts,
     isLocked,
-    useBiometric,
-    fingerprintRegistered,
   } = useAuth();
   const [, navigate] = useLocation();
 
@@ -41,29 +38,6 @@ export default function Login() {
       } else {
         setError(
           `Invalid PIN. ${maxAttempts - failedAttempts} attempt${
-            maxAttempts - failedAttempts !== 1 ? "s" : ""
-          } remaining.`
-        );
-      }
-    }
-    setIsLoading(false);
-  };
-
-  const handleBiometric = async () => {
-    if (!useBiometric || !fingerprintRegistered) return;
-
-    setIsLoading(true);
-    setError("");
-
-    const success = await authenticateWithBiometric();
-    if (success) {
-      navigate("/");
-    } else {
-      if (failedAttempts >= maxAttempts) {
-        setError("Vault locked. All data has been wiped for security.");
-      } else {
-        setError(
-          `Biometric authentication failed. ${maxAttempts - failedAttempts} attempt${
             maxAttempts - failedAttempts !== 1 ? "s" : ""
           } remaining.`
         );
@@ -100,40 +74,6 @@ export default function Login() {
                 </p>
               </div>
             </div>
-          )}
-
-          {/* Fingerprint Option */}
-          {useBiometric && fingerprintRegistered && !isLocked && (
-            <>
-              <div className="text-center py-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-                  <Fingerprint className="w-8 h-8 text-primary animate-pulse-subtle" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Use your fingerprint to unlock
-                </p>
-              </div>
-
-              <Button
-                onClick={handleBiometric}
-                disabled={isLoading}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                size="lg"
-              >
-                {isLoading ? "Authenticating..." : "Scan Fingerprint"}
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or use PIN
-                  </span>
-                </div>
-              </div>
-            </>
           )}
 
           {/* PIN Authentication */}
