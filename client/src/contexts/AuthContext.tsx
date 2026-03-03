@@ -14,11 +14,16 @@ import {
   getAuthState,
 } from "@/lib/storage";
 import { isFingerprintSupported } from "@/lib/encryption";
+import {
+  isPlatformAuthenticatorAvailable,
+  authenticateWithFingerprint,
+} from "@/lib/webauthn";
 
 interface AuthContextType {
   isInitialized: boolean;
   isAuthenticated: boolean;
   pin: string | null;
+  authMethod: "pin" | "fingerprint" | null;
   useBiometric: boolean;
   fingerprintSupported: boolean;
   failedAttempts: number;
@@ -27,6 +32,7 @@ interface AuthContextType {
 
   // Actions
   setupPin: (pin: string) => Promise<void>;
+  setupFingerprint: (credentialId: string) => Promise<void>;
   authenticateWithPin: (pin: string) => Promise<boolean>;
   authenticateWithBiometric: () => Promise<boolean>;
   logout: () => void;
@@ -41,6 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState<string | null>(null);
+  const [authMethod, setAuthMethod] = useState<"pin" | "fingerprint" | null>(
+    null
+  );
   const [useBiometric, setUseBiometric] = useState(false);
   const [fingerprintSupported, setFingerprintSupported] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -56,20 +65,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const authState = getAuthState();
       if (authState) {
         setUseBiometric(authState.useBiometric);
+        setAuthMethod(authState.authMethod);
       }
       setFailedAttempts(getFailedAttempts());
     }
 
     // Check fingerprint support
-    isFingerprintSupported().then(setFingerprintSupported);
+    isPlatformAuthenticatorAvailable().then(setFingerprintSupported);
   }, []);
 
   const setupPin = async (newPin: string) => {
     const { initializeVault } = await import("@/lib/storage");
-    await initializeVault(newPin);
+    await initializeVault(newPin, "pin");
     setPin(newPin);
+    setAuthMethod("pin");
     setIsInitialized(true);
     setIsAuthenticated(true);
+    resetFailedAttempts();
+    setFailedAttempts(0);
+  };
+
+  const setupFingerprint = async (credentialId: string) => {
+    const { initializeVault } = await import("@/lib/storage");
+    // For fingerprint, we use a derived key from the credential
+    // Store the credential ID for later authentication
+    await initializeVault(credentialId, "fingerprint", credentialId);
+    setPin(credentialId);
+    setAuthMethod("fingerprint");
+    setIsInitialized(true);
+    setIsAuthenticated(true);
+    setUseBiometric(true);
     resetFailedAttempts();
     setFailedAttempts(0);
   };
@@ -108,8 +133,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // In a real app, you'd use WebAuthn here
-      // For now, this is a placeholder
+      const authState = getAuthState();
+      if (!authState || !authState.credentialId) {
+        return false;
+      }
+
+      const derivedKey = await authenticateWithFingerprint(
+        authState.credentialId
+      );
+      const { loadVaultData } = await import("@/lib/storage");
+      await loadVaultData(derivedKey);
+
+      setPin(derivedKey);
+      setIsAuthenticated(true);
+      resetFailedAttempts();
+      setFailedAttempts(0);
       return true;
     } catch {
       const attempts = incrementFailedAttempts();
@@ -147,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsInitialized(false);
     setIsAuthenticated(false);
     setPin(null);
+    setAuthMethod(null);
     setFailedAttempts(0);
   };
 
@@ -156,12 +195,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isInitialized,
         isAuthenticated,
         pin,
+        authMethod,
         useBiometric,
         fingerprintSupported,
         failedAttempts,
         maxAttempts,
         isLocked,
         setupPin,
+        setupFingerprint,
         authenticateWithPin,
         authenticateWithBiometric,
         logout,

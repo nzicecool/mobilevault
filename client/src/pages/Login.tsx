@@ -1,21 +1,41 @@
 /**
  * Login Page - Authentication
- * Minimalist Security Design: Focused authentication interface
+ * Minimalist Security Design: Focused authentication interface with dual methods
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Lock, AlertCircle, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import { getAuthState } from "@/lib/storage";
 
 export default function Login() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { authenticateWithPin, authenticateWithBiometric, failedAttempts, maxAttempts, isLocked, useBiometric } = useAuth();
+  const [authMethod, setAuthMethod] = useState<"pin" | "fingerprint" | null>(
+    null
+  );
+  const {
+    authenticateWithPin,
+    authenticateWithBiometric,
+    failedAttempts,
+    maxAttempts,
+    isLocked,
+    useBiometric,
+    fingerprintSupported,
+  } = useAuth();
   const [, navigate] = useLocation();
+
+  // Determine authentication method on mount
+  useEffect(() => {
+    const authState = getAuthState();
+    if (authState) {
+      setAuthMethod(authState.authMethod);
+    }
+  }, []);
 
   const handlePinSubmit = async () => {
     if (pin.length !== 6) return;
@@ -51,7 +71,15 @@ export default function Login() {
     if (success) {
       navigate("/");
     } else {
-      setError("Biometric authentication failed");
+      if (failedAttempts >= maxAttempts) {
+        setError("Vault locked. All data has been wiped for security.");
+      } else {
+        setError(
+          `Biometric authentication failed. ${maxAttempts - failedAttempts} attempt${
+            maxAttempts - failedAttempts !== 1 ? "s" : ""
+          } remaining.`
+        );
+      }
     }
     setIsLoading(false);
   };
@@ -86,22 +114,52 @@ export default function Login() {
             </div>
           )}
 
-          {/* Biometric Button */}
-          {useBiometric && !isLocked && (
-            <Button
-              onClick={handleBiometric}
-              disabled={isLoading}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              <Fingerprint className="w-5 h-5 mr-2" />
-              Use Fingerprint
-            </Button>
+          {/* Fingerprint Authentication */}
+          {authMethod === "fingerprint" && !isLocked && (
+            <>
+              <div className="text-center py-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+                  <Fingerprint className="w-8 h-8 text-primary animate-pulse-subtle" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use your fingerprint to unlock
+                </p>
+              </div>
+
+              <Button
+                onClick={handleBiometric}
+                disabled={isLoading}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="lg"
+              >
+                {isLoading ? "Authenticating..." : "Scan Fingerprint"}
+              </Button>
+
+              {error && (
+                <div className="flex gap-2 items-start p-3 bg-destructive/10 rounded-md">
+                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              {/* Attempt Counter */}
+              {failedAttempts > 0 && failedAttempts < maxAttempts && (
+                <div className="flex justify-center gap-1">
+                  {Array.from({ length: maxAttempts }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 w-2 rounded-full ${
+                        i < failedAttempts ? "bg-destructive" : "bg-muted"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
-          {/* PIN Input */}
-          {!isLocked && (
+          {/* PIN Authentication */}
+          {authMethod === "pin" && !isLocked && (
             <>
               <PinInput
                 value={pin}

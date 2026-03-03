@@ -18,12 +18,15 @@ const STORAGE_KEYS = {
   FAILED_ATTEMPTS: "vault_failed_attempts",
   SALT: "vault_salt",
   IV_PREFIX: "vault_iv_",
+  CREDENTIAL_ID: "vault_credential_id",
 };
 
 export interface AuthState {
   isSetup: boolean;
+  authMethod: "pin" | "fingerprint"; // New: track authentication method
   useBiometric: boolean;
   salt: string; // Base64 encoded salt
+  credentialId?: string; // For fingerprint auth
 }
 
 export interface EncryptedEntry {
@@ -43,14 +46,20 @@ export interface VaultData {
 /**
  * Initialize vault on first setup
  */
-export async function initializeVault(pin: string): Promise<void> {
+export async function initializeVault(
+  pin: string,
+  authMethod: "pin" | "fingerprint" = "pin",
+  credentialId?: string
+): Promise<void> {
   const salt = generateRandomBytes(16);
   const saltBase64 = arrayBufferToBase64(salt.buffer);
 
   const authState: AuthState = {
     isSetup: true,
-    useBiometric: false,
+    authMethod,
+    useBiometric: authMethod === "fingerprint",
     salt: saltBase64,
+    credentialId,
   };
 
   localStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(authState));
@@ -157,6 +166,7 @@ export function wipeVaultData(): void {
   localStorage.removeItem(STORAGE_KEYS.ENCRYPTED_DATA);
   localStorage.removeItem(STORAGE_KEYS.FAILED_ATTEMPTS);
   localStorage.removeItem(STORAGE_KEYS.SALT);
+  localStorage.removeItem(STORAGE_KEYS.CREDENTIAL_ID);
 
   // Remove all IV entries
   const keys = Object.keys(localStorage);
