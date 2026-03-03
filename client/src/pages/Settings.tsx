@@ -10,12 +10,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 
 export default function Settings() {
-  const { logout, useBiometric, enableBiometric, disableBiometric, fingerprintSupported, wipeData } = useAuth();
+  const {
+    logout,
+    useBiometric,
+    enableBiometric,
+    disableBiometric,
+    fingerprintSupported,
+    fingerprintRegistered,
+    registerBiometric,
+    wipeData,
+  } = useAuth();
   const [, navigate] = useLocation();
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
+  const [isRegisteringBiometric, setIsRegisteringBiometric] = useState(false);
+  const [biometricError, setBiometricError] = useState("");
 
   const handleWipeData = () => {
-    if (!confirm("Are you absolutely sure? This will permanently delete all your data.")) {
+    if (
+      !confirm(
+        "Are you absolutely sure? This will permanently delete all your data."
+      )
+    ) {
       return;
     }
 
@@ -26,9 +41,21 @@ export default function Settings() {
   const handleBiometricToggle = () => {
     if (useBiometric) {
       disableBiometric();
-    } else {
+    } else if (fingerprintRegistered) {
       enableBiometric();
     }
+  };
+
+  const handleRegisterBiometric = async () => {
+    setIsRegisteringBiometric(true);
+    setBiometricError("");
+    const success = await registerBiometric();
+    if (!success) {
+      setBiometricError(
+        "Failed to register fingerprint. Please try again."
+      );
+    }
+    setIsRegisteringBiometric(false);
   };
 
   const handleLogout = () => {
@@ -62,35 +89,74 @@ export default function Settings() {
           <div className="space-y-3">
             {/* Biometric Setting */}
             {fingerprintSupported && (
-              <div className="vault-card flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Fingerprint className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">Fingerprint</p>
-                    <p className="text-xs text-muted-foreground">
-                      {useBiometric ? "Enabled" : "Disabled"}
-                    </p>
+              <>
+                {!fingerprintRegistered ? (
+                  <div className="vault-card">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Fingerprint className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          Fingerprint Unlock
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Register your fingerprint for faster access
+                        </p>
+                      </div>
+                    </div>
+                    {biometricError && (
+                      <div className="flex gap-2 items-start p-3 bg-destructive/10 rounded-md mb-4">
+                        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-destructive">
+                          {biometricError}
+                        </p>
+                      </div>
+                    )}
+                    <Button
+                      onClick={handleRegisterBiometric}
+                      disabled={isRegisteringBiometric}
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      size="sm"
+                    >
+                      {isRegisteringBiometric
+                        ? "Registering..."
+                        : "Register Fingerprint"}
+                    </Button>
                   </div>
-                </div>
-                <button
-                  onClick={handleBiometricToggle}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    useBiometric ? "bg-primary" : "bg-muted"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      useBiometric ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
+                ) : (
+                  <div className="vault-card flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Fingerprint className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          Fingerprint Unlock
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {useBiometric ? "Enabled" : "Disabled"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleBiometricToggle}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        useBiometric ? "bg-primary" : "bg-muted"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          useBiometric ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Info Box */}
             <div className="vault-card bg-primary/5 border-primary/20">
               <p className="text-sm text-foreground">
-                Your vault is protected by a 6-digit PIN and end-to-end encryption.
+                Your vault is protected by a 6-digit PIN and end-to-end
+                encryption.
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 3 failed login attempts will automatically wipe all data.
@@ -118,7 +184,9 @@ export default function Settings() {
 
         {/* Danger Zone */}
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-destructive mb-4">Danger Zone</h2>
+          <h2 className="text-lg font-bold text-destructive mb-4">
+            Danger Zone
+          </h2>
 
           <div className="vault-card bg-destructive/5 border-destructive/20">
             <div className="flex items-start gap-3 mb-4">
@@ -126,7 +194,8 @@ export default function Settings() {
               <div>
                 <p className="font-medium text-destructive">Wipe All Data</p>
                 <p className="text-xs text-destructive/80 mt-1">
-                  Permanently delete all stored information. This action cannot be undone.
+                  Permanently delete all stored information. This action cannot
+                  be undone.
                 </p>
               </div>
             </div>
@@ -149,9 +218,12 @@ export default function Settings() {
               <div className="flex gap-3">
                 <AlertCircle className="w-6 h-6 text-destructive flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-foreground">Are you sure?</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This will permanently delete all your encrypted data. This action cannot be undone.
+                  <h3 className="font-bold text-foreground">
+                    Confirm Data Wipe
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    This will permanently delete all your stored data. This
+                    action cannot be undone.
                   </p>
                 </div>
               </div>
@@ -161,6 +233,7 @@ export default function Settings() {
                   onClick={() => setShowWipeConfirm(false)}
                   variant="outline"
                   className="flex-1"
+                  size="lg"
                 >
                   Cancel
                 </Button>
@@ -168,23 +241,14 @@ export default function Settings() {
                   onClick={handleWipeData}
                   variant="destructive"
                   className="flex-1"
+                  size="lg"
                 >
-                  Delete Everything
+                  Delete All Data
                 </Button>
               </div>
             </div>
           </div>
         )}
-
-        {/* Info Footer */}
-        <div className="mt-8 p-4 bg-card rounded-lg border border-border text-center">
-          <p className="text-xs text-muted-foreground">
-            Secure Vault v1.0.0
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            All data is encrypted locally and never sent to any server.
-          </p>
-        </div>
       </div>
     </div>
   );

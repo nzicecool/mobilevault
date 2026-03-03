@@ -1,6 +1,6 @@
 /**
  * Authentication Context
- * Manages PIN/biometric authentication state and vault access
+ * Manages PIN authentication state and optional fingerprint unlock
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -13,28 +13,28 @@ import {
   updateBiometricPreference,
   getAuthState,
 } from "@/lib/storage";
-import { isFingerprintSupported } from "@/lib/encryption";
 import {
   isPlatformAuthenticatorAvailable,
   authenticateWithFingerprint,
+  registerFingerprint,
 } from "@/lib/webauthn";
 
 interface AuthContextType {
   isInitialized: boolean;
   isAuthenticated: boolean;
   pin: string | null;
-  authMethod: "pin" | "fingerprint" | null;
   useBiometric: boolean;
   fingerprintSupported: boolean;
+  fingerprintRegistered: boolean;
   failedAttempts: number;
   maxAttempts: number;
   isLocked: boolean;
 
   // Actions
   setupPin: (pin: string) => Promise<void>;
-  setupFingerprint: (credentialId: string) => Promise<void>;
   authenticateWithPin: (pin: string) => Promise<boolean>;
   authenticateWithBiometric: () => Promise<boolean>;
+  registerBiometric: () => Promise<boolean>;
   logout: () => void;
   enableBiometric: () => void;
   disableBiometric: () => void;
@@ -47,11 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState<string | null>(null);
-  const [authMethod, setAuthMethod] = useState<"pin" | "fingerprint" | null>(
-    null
-  );
   const [useBiometric, setUseBiometric] = useState(false);
   const [fingerprintSupported, setFingerprintSupported] = useState(false);
+  const [fingerprintRegistered, setFingerprintRegistered] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const maxAttempts = 3;
   const isLocked = failedAttempts >= maxAttempts;
@@ -65,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const authState = getAuthState();
       if (authState) {
         setUseBiometric(authState.useBiometric);
-        setAuthMethod(authState.authMethod);
+        setFingerprintRegistered(!!authState.credentialId);
       }
       setFailedAttempts(getFailedAttempts());
     }
@@ -76,25 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setupPin = async (newPin: string) => {
     const { initializeVault } = await import("@/lib/storage");
+    // Setup with PIN-only authentication
     await initializeVault(newPin, "pin");
     setPin(newPin);
-    setAuthMethod("pin");
     setIsInitialized(true);
     setIsAuthenticated(true);
-    resetFailedAttempts();
-    setFailedAttempts(0);
-  };
-
-  const setupFingerprint = async (credentialId: string) => {
-    const { initializeVault } = await import("@/lib/storage");
-    // For fingerprint, we use a derived key from the credential
-    // Store the credential ID for later authentication
-    await initializeVault(credentialId, "fingerprint", credentialId);
-    setPin(credentialId);
-    setAuthMethod("fingerprint");
-    setIsInitialized(true);
-    setIsAuthenticated(true);
-    setUseBiometric(true);
     resetFailedAttempts();
     setFailedAttempts(0);
   };
@@ -127,8 +111,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const registerBiometric = async (): Promise<boolean> => {
+    if (!fingerprintSupported || !pin) {
+      return false;
+    }
+
+    try {
+      const credentialData = await registerFingerprint(
+        "mobilevault-user",
+        "MobileVault User"
+      );
+
+      // Store credential ID in auth state
+      const authState = getAuthState();
+      if (authState) {
+        authState.credentialId = credentialData.credentialId;
+        localStorage.setItem("vault_auth_state", JSON.stringify(authState));
+      }
+
+      setFingerprintRegistered(true);
+      setUseBiometric(true);
+      updateBiometricPreference(true);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const authenticateWithBiometric = async (): Promise<boolean> => {
-    if (!fingerprintSupported || !useBiometric || isLocked) {
+    if (!fingerprintSupported || !fingerprintRegistered || isLocked || !pin) {
       return false;
     }
 
@@ -138,13 +149,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      const derivedKey = await authenticateWithFingerprint(
-        authState.credentialId
-      );
-      const { loadVaultData } = await import("@/lib/storage");
-      await loadVaultData(derivedKey);
+      // Verify fingerprint
+      await authenticateWithFingerprint(authState.credentialId);
 
-      setPin(derivedKey);
+      // Use the stored PIN to decrypt vault
+      const { loadVaultData } = await import("@/lib/storage");
+      await loadVaultData(pin);
+
       setIsAuthenticated(true);
       resetFailedAttempts();
       setFailedAttempts(0);
@@ -169,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const enableBiometric = () => {
-    if (fingerprintSupported) {
+    if (fingerprintSupported && fingerprintRegistered) {
       setUseBiometric(true);
       updateBiometricPreference(true);
     }
@@ -185,7 +196,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsInitialized(false);
     setIsAuthenticated(false);
     setPin(null);
-    setAuthMethod(null);
     setFailedAttempts(0);
   };
 
@@ -195,16 +205,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isInitialized,
         isAuthenticated,
         pin,
-        authMethod,
         useBiometric,
         fingerprintSupported,
+        fingerprintRegistered,
         failedAttempts,
         maxAttempts,
         isLocked,
         setupPin,
-        setupFingerprint,
         authenticateWithPin,
         authenticateWithBiometric,
+        registerBiometric,
         logout,
         enableBiometric,
         disableBiometric,

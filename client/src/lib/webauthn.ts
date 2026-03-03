@@ -99,6 +99,7 @@ export async function registerFingerprint(
 
 /**
  * Authenticate with fingerprint
+ * Returns a deterministic encryption key derived from the credential ID
  */
 export async function authenticateWithFingerprint(
   credentialId: string
@@ -131,27 +132,29 @@ export async function authenticateWithFingerprint(
       throw new Error("Authentication failed");
     }
 
-    // Return a deterministic key derived from the credential
-    // This will be used as the encryption key
-    const response = assertion.response as AuthenticatorAssertionResponse;
-    const authenticatorData = response.authenticatorData;
-    const clientDataJSON = response.clientDataJSON;
-
-    // Combine authenticator data and client data to create a deterministic key
-    const combined = new Uint8Array(
-      authenticatorData.byteLength + clientDataJSON.byteLength
-    );
-    combined.set(new Uint8Array(authenticatorData), 0);
-    combined.set(new Uint8Array(clientDataJSON), authenticatorData.byteLength);
-
-    // Hash the combined data to get a consistent key
-    const hashBuffer = await crypto.subtle.digest("SHA-256", combined);
+    // Use a deterministic key derived from the credential ID
+    // This ensures the same encryption key is used for both setup and login
+    // The credential ID itself is unique and stable for each device
+    const credentialIdBuffer = base64ToArrayBuffer(credentialId);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", credentialIdBuffer);
     return arrayBufferToBase64(hashBuffer);
   } catch (error) {
     throw new Error(
       `Fingerprint authentication failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
+}
+
+/**
+ * Derive deterministic encryption key from credential ID
+ * This is used during setup to ensure the same key is used for encryption
+ */
+export async function deriveEncryptionKeyFromCredentialId(
+  credentialId: string
+): Promise<string> {
+  const credentialIdBuffer = base64ToArrayBuffer(credentialId);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", credentialIdBuffer);
+  return arrayBufferToBase64(hashBuffer);
 }
 
 /**

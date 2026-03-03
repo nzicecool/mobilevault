@@ -1,23 +1,19 @@
 /**
  * Login Page - Authentication
- * Minimalist Security Design: Focused authentication interface with dual methods
+ * Minimalist Security Design: Focused authentication interface with optional fingerprint
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Lock, AlertCircle, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { getAuthState } from "@/lib/storage";
 
 export default function Login() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [authMethod, setAuthMethod] = useState<"pin" | "fingerprint" | null>(
-    null
-  );
   const {
     authenticateWithPin,
     authenticateWithBiometric,
@@ -25,17 +21,9 @@ export default function Login() {
     maxAttempts,
     isLocked,
     useBiometric,
-    fingerprintSupported,
+    fingerprintRegistered,
   } = useAuth();
   const [, navigate] = useLocation();
-
-  // Determine authentication method on mount
-  useEffect(() => {
-    const authState = getAuthState();
-    if (authState) {
-      setAuthMethod(authState.authMethod);
-    }
-  }, []);
 
   const handlePinSubmit = async () => {
     if (pin.length !== 6) return;
@@ -62,7 +50,7 @@ export default function Login() {
   };
 
   const handleBiometric = async () => {
-    if (!useBiometric) return;
+    if (!useBiometric || !fingerprintRegistered) return;
 
     setIsLoading(true);
     setError("");
@@ -114,8 +102,8 @@ export default function Login() {
             </div>
           )}
 
-          {/* Fingerprint Authentication */}
-          {authMethod === "fingerprint" && !isLocked && (
+          {/* Fingerprint Option */}
+          {useBiometric && fingerprintRegistered && !isLocked && (
             <>
               <div className="text-center py-4">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
@@ -135,31 +123,21 @@ export default function Login() {
                 {isLoading ? "Authenticating..." : "Scan Fingerprint"}
               </Button>
 
-              {error && (
-                <div className="flex gap-2 items-start p-3 bg-destructive/10 rounded-md">
-                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-destructive">{error}</p>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
                 </div>
-              )}
-
-              {/* Attempt Counter */}
-              {failedAttempts > 0 && failedAttempts < maxAttempts && (
-                <div className="flex justify-center gap-1">
-                  {Array.from({ length: maxAttempts }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-2 w-2 rounded-full ${
-                        i < failedAttempts ? "bg-destructive" : "bg-muted"
-                      }`}
-                    />
-                  ))}
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or use PIN
+                  </span>
                 </div>
-              )}
+              </div>
             </>
           )}
 
           {/* PIN Authentication */}
-          {authMethod === "pin" && !isLocked && (
+          {!isLocked && (
             <>
               <PinInput
                 value={pin}

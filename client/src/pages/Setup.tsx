@@ -1,44 +1,25 @@
 /**
  * Setup Page - Initial PIN Configuration
- * Minimalist Security Design: Clean, focused setup flow with authentication method choice
+ * Minimalist Security Design: Clean, focused setup flow with PIN creation
  */
 
 import React, { useState } from "react";
-import { Lock, CheckCircle2, AlertCircle, Fingerprint } from "lucide-react";
+import { Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PinInput } from "@/components/PinInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { registerFingerprint } from "@/lib/webauthn";
 
-type SetupStep =
-  | "welcome"
-  | "auth-method"
-  | "create-pin"
-  | "confirm-pin"
-  | "fingerprint-register"
-  | "complete";
+type SetupStep = "welcome" | "create-pin" | "confirm-pin";
 
 export default function Setup() {
   const [step, setStep] = useState<SetupStep>("welcome");
-  const [authMethod, setAuthMethod] = useState<"pin" | "fingerprint" | null>(
-    null
-  );
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { setupPin, setupFingerprint, fingerprintSupported } = useAuth();
+  const { setupPin } = useAuth();
   const [, navigate] = useLocation();
-
-  const handleAuthMethodSelect = (method: "pin" | "fingerprint") => {
-    setAuthMethod(method);
-    if (method === "pin") {
-      setStep("create-pin");
-    } else {
-      setStep("fingerprint-register");
-    }
-  };
 
   const handleCreatePin = async () => {
     if (pin.length !== 6) {
@@ -61,28 +42,11 @@ export default function Setup() {
 
     try {
       await setupPin(pin);
+      // Wait a tick to ensure state updates are processed before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
       navigate("/");
     } catch (err) {
       setError("Failed to setup vault. Please try again.");
-      setIsLoading(false);
-    }
-  };
-
-  const handleFingerprintRegister = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const credentialData = await registerFingerprint(
-        "mobilevault-user",
-        "MobileVault User"
-      );
-      await setupFingerprint(credentialData.credentialId);
-      navigate("/");
-    } catch (err) {
-      setError(
-        `Fingerprint registration failed: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
       setIsLoading(false);
     }
   };
@@ -108,7 +72,7 @@ export default function Setup() {
               </h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Your personal information will be encrypted and stored locally on
-                your device. Choose how you want to protect your vault.
+                your device. Create a 6-digit PIN to protect your vault.
               </p>
 
               <div className="space-y-3 mt-6">
@@ -119,7 +83,7 @@ export default function Setup() {
                       End-to-End Encrypted
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      All data encrypted locally with your authentication method
+                      All data encrypted locally with your PIN
                     </p>
                   </div>
                 </div>
@@ -151,80 +115,11 @@ export default function Setup() {
             </div>
 
             <Button
-              onClick={() => setStep("auth-method")}
+              onClick={() => setStep("create-pin")}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               size="lg"
             >
-              Continue
-            </Button>
-          </div>
-        )}
-
-        {/* Authentication Method Selection */}
-        {step === "auth-method" && (
-          <div className="vault-card space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Choose Authentication Method
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Select how you want to protect your vault
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {/* PIN Option */}
-              <button
-                onClick={() => handleAuthMethodSelect("pin")}
-                className="vault-card hover:border-primary transition-all text-left group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex gap-3">
-                    <div className="p-2 bg-blue-500/10 text-blue-600 rounded-lg group-hover:scale-110 transition-transform">
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground">6-Digit PIN</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Encrypt with a secure PIN code
-                      </p>
-                    </div>
-                  </div>
-                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary" />
-                </div>
-              </button>
-
-              {/* Fingerprint Option */}
-              {fingerprintSupported && (
-                <button
-                  onClick={() => handleAuthMethodSelect("fingerprint")}
-                  className="vault-card hover:border-primary transition-all text-left group"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-3">
-                      <div className="p-2 bg-green-500/10 text-green-600 rounded-lg group-hover:scale-110 transition-transform">
-                        <Fingerprint className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground">Fingerprint</h3>
-                        <p className="text-xs text-muted-foreground">
-                          Encrypt with your biometric data
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-5 h-5 rounded-full border-2 border-muted" />
-                  </div>
-                </button>
-              )}
-            </div>
-
-            <Button
-              onClick={() => setStep("welcome")}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              Back
+              Create PIN
             </Button>
           </div>
         )}
@@ -257,7 +152,7 @@ export default function Setup() {
 
             <div className="flex gap-3">
               <Button
-                onClick={() => setStep("auth-method")}
+                onClick={() => setStep("welcome")}
                 variant="outline"
                 className="flex-1"
                 size="lg"
@@ -321,54 +216,7 @@ export default function Setup() {
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                 size="lg"
               >
-                {isLoading ? "Setting up..." : "Continue"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Fingerprint Registration Step */}
-        {step === "fingerprint-register" && (
-          <div className="vault-card space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Register Your Fingerprint
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Your vault will be encrypted with your biometric data
-              </p>
-            </div>
-
-            {error && (
-              <div className="flex gap-2 items-start p-3 bg-destructive/10 rounded-md">
-                <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
-
-            <div className="flex justify-center py-8">
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse-subtle">
-                <Fingerprint className="w-10 h-10 text-primary" />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleFingerprintRegister}
-                disabled={isLoading}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                size="lg"
-              >
-                {isLoading ? "Registering..." : "Register Fingerprint"}
-              </Button>
-              <Button
-                onClick={() => setStep("auth-method")}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full"
-                size="lg"
-              >
-                Back
+                {isLoading ? "Setting up..." : "Complete Setup"}
               </Button>
             </div>
           </div>
