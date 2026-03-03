@@ -15,24 +15,34 @@ import Settings from "./pages/Settings";
 function Router() {
   const { isInitialized, isAuthenticated } = useAuth();
 
+  // Show Setup if not initialized
+  if (!isInitialized) {
+    return (
+      <Switch>
+        <Route path="*" component={Setup} />
+      </Switch>
+    );
+  }
+
+  // Show Login if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="*" component={Login} />
+      </Switch>
+    );
+  }
+
+  // Show authenticated routes
   return (
     <Switch>
-      {/* Authentication Routes */}
-      {!isInitialized ? (
-        <Route path="*" component={Setup} />
-      ) : !isAuthenticated ? (
-        <Route path="*" component={Login} />
-      ) : (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/category/:id" component={CategoryView} />
-          <Route path="/add-entry" component={AddEditEntry} />
-          <Route path="/edit-entry/:id" component={AddEditEntry} />
-          <Route path="/settings" component={Settings} />
-          <Route path="/404" component={NotFound} />
-          <Route component={NotFound} />
-        </>
-      )}
+      <Route path="/" component={Home} />
+      <Route path="/category/:id" component={CategoryView} />
+      <Route path="/add-entry" component={AddEditEntry} />
+      <Route path="/edit-entry/:id" component={AddEditEntry} />
+      <Route path="/settings" component={Settings} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
     </Switch>
   );
 }

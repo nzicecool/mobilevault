@@ -131,8 +131,8 @@ export default function Home() {
               <Lock className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">Secure Vault</h1>
-              <p className="text-xs text-muted-foreground">Encrypted storage</p>
+              <h1 className="font-bold text-foreground">MobileVault</h1>
+              <p className="text-xs text-muted-foreground">Store securely</p>
             </div>
           </div>
 
