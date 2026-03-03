@@ -111,6 +111,18 @@ export default function Setup() {
                     </p>
                   </div>
                 </div>
+
+                <div className="flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-foreground text-sm">
+                      Download & Install
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Install as an app on your phone - no cloud needed
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 

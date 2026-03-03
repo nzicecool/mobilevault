@@ -16,6 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { loadVaultData } from "@/lib/storage";
@@ -158,7 +159,9 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="container max-w-2xl mx-auto px-4 py-8">
+      <div className="container max-w-2xl mx-auto px-4 py-6">
+        {/* PWA Install Prompt */}
+        <PWAInstallPrompt />
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-2">
