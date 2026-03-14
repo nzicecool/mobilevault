@@ -265,3 +265,111 @@ export function getAutoLockTimeout(): number {
 export function setAutoLockTimeoutStorage(minutes: number): void {
   localStorage.setItem("vault_auto_lock_timeout", minutes.toString());
 }
+
+
+// Export/Import Backup Functions
+export interface VaultBackup {
+  version: string;
+  timestamp: number;
+  encryptedData: string;
+  ivData: string;
+  salt: string;
+  authState: AuthState;
+}
+
+/**
+ * Export encrypted vault data as a backup file
+ */
+export async function exportVaultBackup(pin: string): Promise<VaultBackup> {
+  const authState = getAuthState();
+  if (!authState) {
+    throw new Error("Vault not initialized. Cannot export.");
+  }
+
+  const encryptedData = localStorage.getItem(STORAGE_KEYS.ENCRYPTED_DATA);
+  const ivData = localStorage.getItem(STORAGE_KEYS.IV_PREFIX + "data");
+
+  if (!encryptedData || !ivData) {
+    throw new Error("Vault data not found. Please ensure vault is initialized.");
+  }
+
+  // Verify PIN is correct by attempting to load vault data
+  try {
+    await loadVaultData(pin);
+  } catch {
+    throw new Error("Invalid PIN. Cannot export vault.");
+  }
+
+  return {
+    version: "1.0",
+    timestamp: Date.now(),
+    encryptedData,
+    ivData,
+    salt: authState.salt,
+    authState,
+  };
+}
+
+/**
+ * Import encrypted vault backup from file
+ */
+export async function importVaultBackup(backup: VaultBackup): Promise<void> {
+  // Validate backup structure
+  if (!backup.version || !backup.encryptedData || !backup.salt || !backup.ivData || !backup.authState) {
+    throw new Error("Invalid backup file format.");
+  }
+
+  if (backup.version !== "1.0") {
+    throw new Error("Unsupported backup version.");
+  }
+
+  // Check if vault already exists
+  const existingAuthState = getAuthState();
+  if (existingAuthState) {
+    throw new Error("Vault already exists. Please wipe all data first to import a backup.");
+  }
+
+  // Restore backup data
+  localStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(backup.authState));
+  localStorage.setItem(STORAGE_KEYS.ENCRYPTED_DATA, backup.encryptedData);
+  localStorage.setItem(STORAGE_KEYS.IV_PREFIX + "data", backup.ivData);
+  localStorage.setItem(STORAGE_KEYS.FAILED_ATTEMPTS, "0");
+}
+
+/**
+ * Generate a downloadable backup file
+ */
+export function downloadBackupFile(backup: VaultBackup): void {
+  const dataStr = JSON.stringify(backup, null, 2);
+  const dataBlob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `mobilevault-backup-${backup.timestamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Parse backup file from user input
+ */
+export async function parseBackupFile(file: File): Promise<VaultBackup> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const backup = JSON.parse(content) as VaultBackup;
+        resolve(backup);
+      } catch (err) {
+        reject(new Error("Failed to parse backup file. Please ensure it's a valid MobileVault backup."));
+      }
+    };
+    reader.onerror = () => {
+      reject(new Error("Failed to read backup file."));
+    };
+    reader.readAsText(file);
+  });
+}

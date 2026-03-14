@@ -3,16 +3,21 @@
  * Minimalist Security Design: Clean settings interface
  */
 
-import React, { useState } from "react";
-import { ArrowLeft, AlertCircle, Clock, LogOut } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { ArrowLeft, AlertCircle, Clock, LogOut, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import { exportVaultBackup, downloadBackupFile, parseBackupFile, importVaultBackup } from "@/lib/storage";
+import { toast } from "sonner";
 
 export default function Settings() {
-  const { logout, wipeData, autoLockTimeout, setAutoLockTimeout } = useAuth();
+  const { logout, wipeData, autoLockTimeout, setAutoLockTimeout, pin } = useAuth();
   const [, navigate] = useLocation();
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleWipeData = () => {
     if (
@@ -34,6 +39,47 @@ export default function Settings() {
 
   const handleAutoLockChange = (minutes: number) => {
     setAutoLockTimeout(minutes);
+  };
+
+  const handleExportVault = async () => {
+    try {
+      setIsExporting(true);
+      if (!pin) {
+        toast.error("PIN not available. Please try again.");
+        return;
+      }
+      const backup = await exportVaultBackup(pin);
+      downloadBackupFile(backup);
+      toast.success("Vault backup downloaded successfully!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to export vault");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const backup = await parseBackupFile(file);
+      await importVaultBackup(backup);
+      toast.success("Vault imported successfully! Please refresh the page.");
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to import vault");
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const autoLockOptions = [
@@ -110,6 +156,52 @@ export default function Settings() {
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 3 failed login attempts will automatically wipe all data.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Backup Section */}
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-foreground mb-4">Backup & Restore</h2>
+
+          <div className="space-y-3">
+            <Button
+              onClick={handleExportVault}
+              disabled={isExporting}
+              variant="outline"
+              className="w-full justify-start"
+              size="lg"
+            >
+              <Download className="w-5 h-5 mr-3" />
+              {isExporting ? "Exporting..." : "Export Vault Backup"}
+            </Button>
+
+            <Button
+              onClick={handleImportClick}
+              disabled={isImporting}
+              variant="outline"
+              className="w-full justify-start"
+              size="lg"
+            >
+              <Upload className="w-5 h-5 mr-3" />
+              {isImporting ? "Importing..." : "Import Vault Backup"}
+            </Button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <div className="vault-card bg-primary/5 border-primary/20">
+              <p className="text-sm text-foreground">
+                Export your encrypted vault to backup your data or restore it on another device.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Backups are encrypted and can only be imported with the same PIN.
               </p>
             </div>
           </div>
