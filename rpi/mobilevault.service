@@ -1,0 +1,27 @@
+[Unit]
+Description=MobileVault - Secure Encrypted Personal Information Storage
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mobilevault
+ExecStart=/usr/bin/node /home/pi/mobilevault/server.mjs
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mobilevault
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Environment
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=DATA_DIR=/home/pi/mobilevault/data
+
+[Install]
+WantedBy=multi-user.target
