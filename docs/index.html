@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MobileVault — Encrypted Personal Information Storage</title>
+  <meta name="description" content="A secure, installable PWA for storing encrypted personal information on your device or Raspberry Pi. PIN-protected, offline-capable, zero cloud dependencies." />
+  <meta property="og:title" content="MobileVault — Encrypted Personal Information Storage" />
+  <meta property="og:description" content="Store passwords, medical info, insurance details and more — encrypted with your PIN, on your device." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://nzicecool.github.io/mobilevault/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f0f0fa;
+      --bg-card:   #ffffff;
+      --bg-dark:   #1a1a2e;
+      --bg-dark2:  #16213e;
+      --accent:    #10b981;
+      --accent2:   #059669;
+      --indigo:    #4f46e5;
+      --navy:      #0f172a;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --radius:    12px;
+      --font-body: 'Inter', sans-serif;
+      --font-head: 'Poppins', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--navy);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(240, 240, 250, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--navy);
+      text-decoration: none;
+    }
+
+    .nav-logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--navy); }
+
+    .nav-links .btn-github {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--navy);
+      color: white !important;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .nav-links .btn-github:hover { background: #1e293b; }
+
+    @media (max-width: 640px) {
+      .nav-links li:not(:last-child) { display: none; }
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    .hero-badge span { color: var(--accent); font-weight: 600; }
+
+    .hero h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2.4rem, 6vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--navy);
+      margin-bottom: 0.3rem;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 1.2rem auto 2.2rem;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--indigo);
+      color: white;
+    }
+
+    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+
+    .btn-outline {
+      background: white;
+      color: var(--navy);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+
+    /* ── STATS ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: white;
+      margin: 0;
+    }
+
+    .stat { text-align: center; }
+
+    .stat-value {
+      font-family: var(--font-head);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* ── MOCK PHONE ── */
+    .phone-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 4rem 2rem;
+    }
+
+    .phone {
+      width: 260px;
+      background: var(--bg-dark);
+      border-radius: 36px;
+      padding: 20px 16px;
+      border: 6px solid #2d2d4e;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.25);
+      position: relative;
+    }
+
+    .phone::before {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 6px;
+      background: #2d2d4e;
+      border-radius: 3px;
+      margin: 0 auto 16px;
+    }
+
+    .phone-screen {
+      background: #0f172a;
+      border-radius: 20px;
+      padding: 16px;
+      min-height: 380px;
+    }
+
+    .phone-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .phone-lock-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .phone-title {
+      font-family: var(--font-head);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .phone-subtitle {
+      font-size: 0.65rem;
+      color: #64748b;
+    }
+
+    .phone-categories {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .phone-cat {
+      background: #1e293b;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .phone-cat-icon {
+      font-size: 16px;
+    }
+
+    .phone-cat-name {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .phone-cat-count {
+      font-size: 0.58rem;
+      color: #64748b;
+    }
+
+    .phone-pin {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .phone-pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .phone-pin-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 1.5px solid #334155;
+    }
+
+    .phone-pin-dot.filled {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ── SECTION SHARED ── */
+    section { padding: 5rem 2rem; }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-family: var(--font-head);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1.2;
+      color: var(--navy);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 560px;
+    }
+
+    /* ── FEATURES ── */
+    #features { background: var(--bg); }
+
+    .features-header { max-width: 1100px; margin: 0 auto 3rem; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--navy);
+    }
+
+    .feature-card p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── SECURITY ── */
+    #security { background: white; }
+
+    .security-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .security-inner { grid-template-columns: 1fr; gap: 2rem; }
+    }
+
+    .security-list { list-style: none; margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+
+    .security-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.92rem;
+    }
+
+    .security-list .check {
+      width: 22px;
+      height: 22px;
+      background: #ecfdf5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent);
+      font-size: 0.75rem;
+      margin-top: 2px;
+    }
+
+    .security-list strong { display: block; font-weight: 600; color: var(--navy); }
+    .security-list span { color: var(--muted); font-size: 0.85rem; }
+
+    .encryption-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .enc-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .enc-row {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .enc-row .enc-row-label { color: var(--muted); font-size: 0.75rem; margin-bottom: 0.2rem; }
+    .enc-row .enc-row-value { font-family: monospace; color: var(--navy); word-break: break-all; }
+    .enc-row .enc-row-value.encrypted { color: var(--accent); font-size: 0.75rem; }
+
+    .enc-arrow {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 0.4rem 0;
+    }
+
+    /* ── SELF-HOST ── */
+    #selfhost {
+      background: var(--bg-dark);
+      color: white;
+    }
+
+    .selfhost-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .selfhost-inner { grid-template-columns: 1fr; gap: 2rem; }
+    }
+
+    #selfhost .section-label { color: var(--accent); }
+    #selfhost .section-title { color: white; }
+    #selfhost .section-sub { color: #94a3b8; }
+
+    .steps { list-style: none; margin-top: 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-text strong { display: block; font-weight: 600; color: white; font-size: 0.92rem; }
+    .step-text span { color: #94a3b8; font-size: 0.85rem; }
+
+    .code-block {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    .code-block .c { color: #6e7681; }
+    .code-block .cmd { color: #79c0ff; }
+    .code-block .str { color: #a5d6ff; }
+    .code-block .kw { color: #10b981; }
+
+    .selfhost-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-accent:hover { background: var(--accent2); transform: translateY(-1px); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border: 1.5px solid rgba(255,255,255,0.15);
+    }
+
+    .btn-ghost:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+
+    /* ── TECH STACK ── */
+    #stack { background: var(--bg); text-align: center; padding: 4rem 2rem; }
+
+    #stack .section-title { margin-bottom: 0.5rem; }
+    #stack .section-sub { margin: 0 auto 2.5rem; }
+
+    .stack-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .stack-tag {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--navy);
+    }
+
+    /* ── CTA ── */
+    #cta {
+      background: white;
+      text-align: center;
+      padding: 5rem 2rem;
+    }
+
+    #cta .section-title { margin-bottom: 0.75rem; }
+    #cta .section-sub { margin: 0 auto 2rem; }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg-dark);
+      color: #94a3b8;
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.85rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">🔒</div>
+      MobileVault
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#selfhost">Self-Host</a></li>
+      <li>
+        <a href="https://github.com/nzicecool/mobilevault" target="_blank" class="btn-github">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.34-1.77-1.34-1.77-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">
+      <span>🔒</span>
+      Open Source &nbsp;·&nbsp; Self-Hostable &nbsp;·&nbsp; End-to-End Encrypted
+    </div>
+    <h1>Your Data.<br><em>Secured by Design.</em></h1>
+    <p>A secure, installable PWA for storing personal information — passwords, medical details, insurance, travel documents and more — encrypted with your PIN, on your device.</p>
+    <div class="hero-buttons">
+      <a href="https://github.com/nzicecool/mobilevault" target="_blank" class="btn btn-primary">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.34-1.77-1.34-1.77-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#selfhost" class="btn btn-outline">Self-Host in 5 Minutes</a>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value">AES-256</div>
+      <div class="stat-label">Encryption Standard</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">0</div>
+      <div class="stat-label">Cloud Dependencies</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">SQLite</div>
+      <div class="stat-label">RPi Database</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">PWA</div>
+      <div class="stat-label">Installable on Mobile</div>
+    </div>
+  </div>
+
+  <!-- PHONE MOCKUP -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-header">
+          <div class="phone-lock-icon">🔒</div>
+          <div>
+            <div class="phone-title">MobileVault</div>
+            <div class="phone-subtitle">Store securely</div>
+          </div>
+        </div>
+        <div class="phone-categories">
+          <div class="phone-cat">
+            <div class="phone-cat-icon">🔑</div>
+            <div class="phone-cat-name">Passwords</div>
+            <div class="phone-cat-count">3 entries</div>
+          </div>
+          <div class="phone-cat">
+            <div class="phone-cat-icon">🏥</div>
+            <div class="phone-cat-name">Medical</div>
+            <div class="phone-cat-count">2 entries</div>
+          </div>
+          <div class="phone-cat">
+            <div class="phone-cat-icon">🛡️</div>
+            <div class="phone-cat-name">Insurance</div>
+            <div class="phone-cat-count">1 entry</div>
+          </div>
+          <div class="phone-cat">
+            <div class="phone-cat-icon">✈️</div>
+            <div class="phone-cat-name">Travel</div>
+            <div class="phone-cat-count">2 entries</div>
+          </div>
+          <div class="phone-cat">
+            <div class="phone-cat-icon">💳</div>
+            <div class="phone-cat-name">Financial</div>
+            <div class="phone-cat-count">4 entries</div>
+          </div>
+          <div class="phone-cat">
+            <div class="phone-cat-icon">🆘</div>
+            <div class="phone-cat-name">Emergency</div>
+            <div class="phone-cat-count">2 entries</div>
+          </div>
+        </div>
+        <div class="phone-pin">
+          <div style="font-size:0.65rem;color:#64748b;margin-bottom:4px;">Auto-lock: 15 min</div>
+          <div class="phone-pin-dots">
+            <div class="phone-pin-dot filled"></div>
+            <div class="phone-pin-dot filled"></div>
+            <div class="phone-pin-dot filled"></div>
+            <div class="phone-pin-dot"></div>
+            <div class="phone-pin-dot"></div>
+            <div class="phone-pin-dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="features-header">
+      <div class="section-label">Features</div>
+      <div class="section-title">Everything you need.<br>Nothing you don't.</div>
+      <div class="section-sub">Built for privacy-conscious people who want full control over their personal information.</div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#ecfdf5;">🔐</div>
+        <h3>End-to-End Encryption</h3>
+        <p>All data is encrypted on your device using AES-256-GCM via the Web Crypto API. Your PIN never leaves your device — not even the server sees plaintext.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#eff6ff;">📂</div>
+        <h3>Six Secure Categories</h3>
+        <p>Organise entries into Passwords, Medical, Insurance, Travel, Financial, and Emergency categories. Each entry is individually encrypted.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#fef3c7;">📱</div>
+        <h3>Installable PWA</h3>
+        <p>Install directly to your phone's home screen from any browser — no app store required. Works fully offline once installed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#fdf2f8;">⏱️</div>
+        <h3>Auto-Lock Timer</h3>
+        <p>Configurable inactivity timeout (5 min, 15 min, 30 min, 1 hour, or never) automatically locks the vault when you step away.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#fff7ed;">🔴</div>
+        <h3>3-Strike Security Wipe</h3>
+        <p>After three consecutive failed PIN attempts, all vault data is permanently wiped and the app resets to a fresh install state.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#f0fdf4;">💾</div>
+        <h3>Encrypted Backup &amp; Restore</h3>
+        <p>Export your encrypted vault as a JSON backup file and re-import it on another device. Your data stays encrypted throughout the transfer.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#f5f3ff;">🌐</div>
+        <h3>Fully Offline</h3>
+        <p>Service worker caches the entire app. Once installed, MobileVault works with zero internet connection — your data never touches the cloud.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#ecfdf5;">🥧</div>
+        <h3>Raspberry Pi Ready</h3>
+        <p>Self-host on a Raspberry Pi with a SQLite backend. One script installs Node.js, the server, and a systemd service that starts on boot.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:#fff1f2;">👁️</div>
+        <h3>Reveal &amp; Hide</h3>
+        <p>Sensitive field values are hidden by default with a toggle to reveal. Prevents shoulder-surfing when viewing entries in public.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECURITY -->
+  <section id="security">
+    <div class="security-inner">
+      <div>
+        <div class="section-label">Security</div>
+        <div class="section-title">Zero-knowledge.<br>Zero compromise.</div>
+        <div class="section-sub">Encryption happens entirely in your browser. The server stores only ciphertext — it cannot read your data even if the database is compromised.</div>
+        <ul class="security-list">
+          <li>
+            <div class="check">✓</div>
+            <div>
+              <strong>AES-256-GCM encryption</strong>
+              <span>Industry-standard authenticated encryption using the native Web Crypto API — no third-party libraries.</span>
+            </div>
+          </li>
+          <li>
+            <div class="check">✓</div>
+            <div>
+              <strong>PBKDF2 key derivation</strong>
+              <span>Your PIN is never stored. A 256-bit encryption key is derived client-side using PBKDF2 with 100,000 iterations and a random salt.</span>
+            </div>
+          </li>
+          <li>
+            <div class="check">✓</div>
+            <div>
+              <strong>Random IV per entry</strong>
+              <span>Each vault entry uses a unique initialisation vector, preventing pattern analysis across entries.</span>
+            </div>
+          </li>
+          <li>
+            <div class="check">✓</div>
+            <div>
+              <strong>3-strike data wipe</strong>
+              <span>Three consecutive failed PIN attempts permanently destroys all vault data — no recovery, no bypass.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <div class="encryption-box">
+          <div class="enc-label">Encryption Flow</div>
+          <div class="enc-row">
+            <div class="enc-row-label">Your entry</div>
+            <div class="enc-row-value">Medicare No: 1234 56789 0 · Exp: 01/2028</div>
+          </div>
+          <div class="enc-arrow">↓ &nbsp; AES-256-GCM + PBKDF2 key &nbsp; ↓</div>
+          <div class="enc-row">
+            <div class="enc-row-label">Stored in vault</div>
+            <div class="enc-row-value encrypted">U2FsdGVkX1+mK9x7Qz3nR8vYpL2wXjH4tF0aBc9dE1gN7oP5qR6sT...</div>
+          </div>
+          <div style="margin-top:1rem;font-size:0.78rem;color:var(--muted);line-height:1.6;">
+            The server (or SQLite file) receives and stores only the encrypted blob. Decryption happens entirely in your browser using your PIN-derived key — the key is never stored or transmitted.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SELF-HOST -->
+  <section id="selfhost">
+    <div class="selfhost-inner">
+      <div>
+        <div class="section-label">Self-Hosting</div>
+        <div class="section-title">Run it on your Pi.<br>Own your data.</div>
+        <div class="section-sub">One script installs everything: Node.js, the MobileVault server, and a systemd service that starts on boot. No Docker required.</div>
+        <ol class="steps">
+          <li class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>Clone the repository</strong>
+              <span>Clone from GitHub onto your Raspberry Pi over SSH.</span>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>Install Node.js 20 LTS</strong>
+              <span>One curl command via NodeSource sets up Node.js on Raspberry Pi OS.</span>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>Build and start the server</strong>
+              <span>npm install &amp;&amp; npm run build, then node rpi/server.mjs — SQLite database created automatically.</span>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">
+              <strong>Enable auto-start with systemd</strong>
+              <span>Copy mobilevault.service and run systemctl enable mobilevault — starts on every boot.</span>
+            </div>
+          </li>
+        </ol>
+        <div class="selfhost-buttons">
+          <a href="https://github.com/nzicecool/mobilevault/blob/main/rpi/INSTALL.md" target="_blank" class="btn btn-accent">Full Setup Guide →</a>
+          <a href="https://github.com/nzicecool/mobilevault" target="_blank" class="btn btn-ghost">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.34-1.77-1.34-1.77-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+      </div>
+      <div>
+        <div class="code-block">
+<span class="c"># Clone the repo</span>
+<span class="cmd">git clone</span> <span class="str">https://github.com/nzicecool/mobilevault.git</span>
+<span class="cmd">cd</span> mobilevault
+
+<span class="c"># Install Node.js 20 LTS</span>
+<span class="cmd">curl</span> -fsSL https://deb.nodesource.com/setup_20.x | <span class="cmd">sudo</span> -E bash -
+<span class="cmd">sudo apt install</span> -y nodejs
+
+<span class="c"># Build and start</span>
+<span class="cmd">npm install</span> &amp;&amp; <span class="cmd">npm run build</span>
+<span class="cmd">node</span> rpi/server.mjs
+
+<span class="c"># Enable auto-start on boot</span>
+<span class="cmd">sudo cp</span> rpi/mobilevault.service /etc/systemd/system/
+<span class="cmd">sudo systemctl</span> <span class="kw">enable</span> mobilevault
+<span class="cmd">sudo systemctl</span> <span class="kw">start</span> mobilevault
+
+<span class="c"># Check status</span>
+<span class="cmd">sudo systemctl status</span> mobilevault
+<span class="cmd">journalctl</span> -u mobilevault -f
+
+<span class="c"># Access from your phone</span>
+<span class="c"># http://&lt;raspberry-pi-ip&gt;:3000</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section id="stack">
+    <div class="section-label">Tech Stack</div>
+    <div class="section-title">Built on solid foundations.</div>
+    <div class="section-sub">Modern, lightweight, and dependency-minimal by design.</div>
+    <div class="stack-tags">
+      <span class="stack-tag">React 19</span>
+      <span class="stack-tag">Tailwind CSS 4</span>
+      <span class="stack-tag">TypeScript</span>
+      <span class="stack-tag">Vite 7</span>
+      <span class="stack-tag">Web Crypto API</span>
+      <span class="stack-tag">AES-256-GCM</span>
+      <span class="stack-tag">PBKDF2</span>
+      <span class="stack-tag">Express 4</span>
+      <span class="stack-tag">SQLite (RPi)</span>
+      <span class="stack-tag">better-sqlite3</span>
+      <span class="stack-tag">Service Worker</span>
+      <span class="stack-tag">PWA Manifest</span>
+      <span class="stack-tag">shadcn/ui</span>
+      <span class="stack-tag">Lucide Icons</span>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta">
+    <div class="section-label" style="text-align:center;">Ready?</div>
+    <div class="section-title" style="text-align:center;">Own your personal data.</div>
+    <div class="section-sub" style="text-align:center;margin:0 auto 2rem;">Open source, self-hostable, and private by design. Get started in minutes — no account, no cloud, no compromise.</div>
+    <div class="cta-buttons">
+      <a href="https://github.com/nzicecool/mobilevault" target="_blank" class="btn btn-primary">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.34-1.77-1.34-1.77-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+      <a href="https://github.com/nzicecool/mobilevault/blob/main/rpi/INSTALL.md" target="_blank" class="btn btn-outline">Setup Guide →</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/nzicecool/mobilevault" target="_blank">GitHub</a>
+      <a href="https://github.com/nzicecool/mobilevault/blob/main/rpi/INSTALL.md" target="_blank">Setup Guide</a>
+      <a href="https://github.com/nzicecool/mobilevault/issues" target="_blank">Issues</a>
+      <a href="https://github.com/nzicecool/mobilevault/blob/main/rpi/INSTALL.md" target="_blank">Docs</a>
+    </div>
+    <div>MobileVault &mdash; Open source, self-hostable, encrypted personal information storage.</div>
+    <div style="margin-top:0.4rem;">Built by <a href="https://github.com/nzicecool" target="_blank">nzicecool</a> &middot; MIT License</div>
+  </footer>
+
+</body>
+</html>
